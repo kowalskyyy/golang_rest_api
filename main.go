@@ -40,9 +40,21 @@ func getOrders(context *gin.Context) {
 	context.IndentedJSON(http.StatusOK, orders)
 }
 
+func submitOrders(context *gin.Context) {
+	var newOrders []order
+	if err := context.BindJSON(&newOrders); err != nil {
+
+		context.IndentedJSON(http.StatusNotFound, gin.H{"message": "Your order data is incorrect"})
+		return
+	}
+	orders = append(orders, newOrders...)
+	context.IndentedJSON(http.StatusOK, newOrders)
+}
+
 func main() {
 	fmt.Printf("elo mordo")
 	router := gin.Default()
 	router.GET("/get-orders", getOrders)
+	router.POST("/submit-orders", submitOrders)
 	router.Run("localhost:8080")
 }

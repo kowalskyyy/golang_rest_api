@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
-
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+
+	"sync"
 )
 
 type item struct {
@@ -31,9 +31,14 @@ type customerSummary struct {
 	TotalAmountEur      float32 `json:"totalAmountEur"`
 }
 
-var orders = []order{}
+var (
+	orders []order
+	mutex  sync.Mutex
+)
 
 func getOrders(context *gin.Context) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	if len(orders) == 0 {
 		context.IndentedJSON(http.StatusNotFound, gin.H{"message": "There are no orders in the system. Please submit orders first."})
 		return
@@ -42,10 +47,12 @@ func getOrders(context *gin.Context) {
 }
 
 func submitOrders(context *gin.Context) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	var newOrders []order
 	if err := context.BindJSON(&newOrders); err != nil {
 
-		context.IndentedJSON(http.StatusNotFound, gin.H{"message": "Your order data is incorrect"})
+		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Your order data is incorrect"})
 		return
 	}
 	orders = append(orders, newOrders...)
@@ -53,6 +60,8 @@ func submitOrders(context *gin.Context) {
 }
 
 func getCustomersSummary(context *gin.Context) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	summaryMap := make(map[string]*customerSummary)
 	var summaries []customerSummary
 	for _, order := range orders {
@@ -67,8 +76,8 @@ func getCustomersSummary(context *gin.Context) {
 		summary := summaryMap[order.CustomerID]
 		for _, item := range order.Items {
 			summary.TotalAmountEur += item.CostEur
+			summary.NbrOfPurchasedItems++
 		}
-		summary.NbrOfPurchasedItems++
 	}
 	for _, summary := range summaryMap {
 		summaries = append(summaries, *summary)
@@ -82,6 +91,8 @@ func getCustomersSummary(context *gin.Context) {
 }
 
 func getItemsByCustomer(context *gin.Context) {
+	mutex.Lock()
+	defer mutex.Unlock()
 	id := context.Param("id")
 	var result []customerItem
 	if len(orders) != 0 {
@@ -111,7 +122,6 @@ func getItemsByCustomer(context *gin.Context) {
 }
 
 func main() {
-	fmt.Printf("elo mordo")
 	router := gin.Default()
 	router.GET("/get-orders", getOrders)
 	router.GET("/get-items/:id", getItemsByCustomer)

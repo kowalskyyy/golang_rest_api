@@ -47,24 +47,37 @@ func getOrders(context *gin.Context) {
 }
 
 func submitOrders(context *gin.Context) {
+	strict := context.Param("strict")
 	var newOrders []order
+	var invalidOrders []order
+	var validOrders []order
 	if err := context.BindJSON(&newOrders); err != nil {
 		context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Your order data is incorrect"})
 		return
 	}
-
+	mutex.Lock()
 	for _, newOrder := range newOrders {
 		if err := validateOrder(newOrder); err != nil {
-			context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid order data", "error": err.Error()})
-			return
+			if strict == "true" {
+				context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid order data", "error": err.Error()})
+				return
+			} else {
+				invalidOrders = append(invalidOrders, newOrder)
+			}
+		} else {
+			orders = append(orders, newOrder)
+			validOrders = append(validOrders, newOrder)
 		}
+
 	}
 
-	mutex.Lock()
-	orders = append(orders, newOrders...)
 	mutex.Unlock()
 
-	context.IndentedJSON(http.StatusOK, newOrders)
+	if len(invalidOrders) != 0 {
+		context.IndentedJSON(http.StatusPartialContent, gin.H{"message": "Some of the orders had a faulty format.", "validOrders": validOrders, "invalidOrders": invalidOrders})
+	} else {
+		context.IndentedJSON(http.StatusOK, newOrders)
+	}
 }
 
 func getCustomersSummary(context *gin.Context) {

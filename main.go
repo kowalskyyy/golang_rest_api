@@ -14,8 +14,8 @@ type item struct {
 }
 
 type customerItem struct {
-	item
 	CustomerID string `json:"customerId"`
+	item
 }
 
 type order struct {
@@ -54,18 +54,18 @@ func getItemsByCustomer(context *gin.Context) {
 			if order.CustomerID == id {
 				for _, item_ := range order.Items {
 					extended := customerItem{
+						CustomerID: id,
 						item: item{
 							ItemID:  item_.ItemID,
 							CostEur: item_.CostEur,
 						},
-						CustomerID: id,
 					}
 					result = append(result, extended)
 				}
 			}
 		}
 		if len(result) != 0 {
-			context.IndentedJSON(http.StatusOK, result)
+			context.IndentedJSON(http.StatusOK, gin.H{"items": result})
 			return
 		} else {
 			context.IndentedJSON(http.StatusNotFound, gin.H{"message": "There are no orders associated with this customer ID"})

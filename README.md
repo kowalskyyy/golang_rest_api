@@ -36,7 +36,7 @@ Install gin package
 ### Making Requests
 
 -   Submit Orders:
-    -   Assumption: This endpoint on default will accept only valid orders and reject those with invalid data structure. For more strict validation, add query parameter `?strict=true` to the endpoint - it will reject the entire request if at least one order is incorrect.
+    -   Assumption: This endpoint on default will accept only valid orders and reject those with invalid data structure. Response will include valid and invalid orders in separate objects. For more strict validation, add query parameter `?strict=true` to the endpoint - it will reject the entire request if at least one order is incorrect.
     -   Endpoint: `/submit-orders`
     -   Method: `POST`
     -   Payload: JSON array of orders

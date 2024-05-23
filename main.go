@@ -25,6 +25,12 @@ type order struct {
 	Items      []item `json:"items"`
 }
 
+type customerSummary struct {
+	CustomerID          string  `json:"customerId"`
+	NbrOfPurchasedItems int16   `json:"nbrOfPurchasedItems"`
+	TotalAmountEur      float32 `json:"totalAmountEur"`
+}
+
 var orders = []order{}
 
 func getOrders(context *gin.Context) {
@@ -44,6 +50,35 @@ func submitOrders(context *gin.Context) {
 	}
 	orders = append(orders, newOrders...)
 	context.IndentedJSON(http.StatusOK, newOrders)
+}
+
+func getCustomersSummary(context *gin.Context) {
+	summaryMap := make(map[string]*customerSummary)
+	var summaries []customerSummary
+	for _, order := range orders {
+		if _, exists := summaryMap[order.CustomerID]; !exists {
+			summaryMap[order.CustomerID] = &customerSummary{
+				CustomerID:          order.CustomerID,
+				NbrOfPurchasedItems: 0,
+				TotalAmountEur:      0,
+			}
+		}
+
+		summary := summaryMap[order.CustomerID]
+		for _, item := range order.Items {
+			summary.TotalAmountEur += item.CostEur
+		}
+		summary.NbrOfPurchasedItems++
+	}
+	for _, summary := range summaryMap {
+		summaries = append(summaries, *summary)
+	}
+
+	if len(summaries) != 0 {
+		context.IndentedJSON(http.StatusOK, summaries)
+		return
+	}
+	context.IndentedJSON(http.StatusNotFound, gin.H{"message": "No summaries available. There are no orders in the system."})
 }
 
 func getItemsByCustomer(context *gin.Context) {
@@ -80,6 +115,7 @@ func main() {
 	router := gin.Default()
 	router.GET("/get-orders", getOrders)
 	router.GET("/get-items/:id", getItemsByCustomer)
+	router.GET("/get-summary", getCustomersSummary)
 	router.POST("/submit-orders", submitOrders)
 	router.Run("localhost:8080")
 }

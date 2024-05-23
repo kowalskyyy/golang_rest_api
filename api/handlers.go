@@ -53,6 +53,13 @@ func submitOrders(context *gin.Context) {
 		return
 	}
 
+	for _, newOrder := range newOrders {
+		if err := validateOrder(newOrder); err != nil {
+			context.IndentedJSON(http.StatusBadRequest, gin.H{"message": "Invalid order data", "error": err.Error()})
+			return
+		}
+	}
+
 	mutex.Lock()
 	orders = append(orders, newOrders...)
 	mutex.Unlock()

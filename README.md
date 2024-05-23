@@ -16,7 +16,7 @@ bash
 
 Copy code
 
-`git clone https://github.com/kowalskyyy/golang_test.git`
+`git clone https://github.com/kowalskyyy/golang_rest_api.git`
 
 Install gin package
 

@@ -47,7 +47,7 @@ func getOrders(context *gin.Context) {
 }
 
 func submitOrders(context *gin.Context) {
-	strict := context.Param("strict")
+	strict := context.DefaultQuery("strict", "false") // Default value is "false" if not provided
 	var newOrders []order
 	var invalidOrders []order
 	var validOrders []order
